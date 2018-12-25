@@ -1,6 +1,7 @@
 package req
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	"os"
 	"regexp"
 	"time"
+
+	"golang.org/x/net/html/charset"
 )
 
 // Resp represents a request with it's response
@@ -92,6 +95,19 @@ func (r *Resp) ToXML(v interface{}) error {
 		return err
 	}
 	return xml.Unmarshal(data, v)
+}
+
+// ToXMLByUTF8 convert xml response body to struct or map 强制UTF8 编码
+func (r *Resp) ToXMLByUTF8(v interface{}) error {
+	data, err := r.ToBytes()
+	if err != nil {
+		return err
+	}
+	decoder := xml.NewDecoder(bytes.NewReader(data))
+	decoder.CharsetReader = func(c string, i io.Reader) (io.Reader, error) {
+		return charset.NewReaderLabel("UTF-8", i)
+	}
+	return decoder.Decode(v)
 }
 
 // ToFile download the response body to file with optional download callback
